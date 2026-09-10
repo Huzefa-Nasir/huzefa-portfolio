@@ -1,0 +1,98 @@
+name: Performance and accessibility polish
+
+on:
+  push:
+    paths:
+      - '.github/workflows/performance-accessibility.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.event.head_commit.message == 'Run performance and accessibility pass'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Improve performance and accessibility
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+
+          # Accessibility: visible skip link + strong keyboard focus states.
+          css=""".skip-link{position:fixed;left:14px;top:14px;z-index:1000;padding:10px 14px;border-radius:9px;background:#fff;color:#0b0b0c;font-weight:700;transform:translateY(-160%);transition:transform .18s}.skip-link:focus{transform:none}a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[role='button']:focus-visible{outline:3px solid #b9ff66;outline-offset:3px}.workflow-shot:focus-visible{box-shadow:0 0 0 3px #b9ff66,0 18px 50px #0008}.workflow-shot[role='button']{touch-action:manipulation}.sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}img{max-width:100%}@media(prefers-reduced-data:reduce){.logo-track{animation-duration:100s}.n8n-shot img{animation:none;width:100%;object-position:center}.camera{animation:none}.packet{display:none}}"""
+          if css not in s:
+              s=s.replace('</style>',css+'</style>',1)
+
+          # Skip link and main landmark.
+          if '<a class="skip-link" href="#main">Skip to content</a>' not in s:
+              s=s.replace('<body>','<body><a class="skip-link" href="#main">Skip to content</a>',1)
+          if '<main id="main">' not in s:
+              s=s.replace('<header class="hero">','<main id="main"><header class="hero">',1)
+              s=s.replace('</section><footer class="wrap">','</section></main><footer class="wrap">',1)
+
+          # Landmark / dialog semantics and clearer controls.
+          s=s.replace('<nav>','<nav aria-label="Primary navigation">',1)
+          s=s.replace('class="btn primary js-contact">Start a project</button>','class="btn primary js-contact" aria-haspopup="dialog">Start a project</button>')
+          s=s.replace('class="btn primary js-contact">Start a project ↗</button>','class="btn primary js-contact" aria-haspopup="dialog">Start a project ↗</button>')
+          s=s.replace('class="btn js-contact">Start a project ↗</button>','class="btn js-contact" aria-haspopup="dialog">Start a project ↗</button>')
+          s=s.replace('<div class="lightbox" id="lb">','<div class="lightbox" id="lb" role="dialog" aria-modal="true" aria-label="Workflow image preview" aria-hidden="true">',1)
+          s=s.replace('<div class="modal" id="modal">','<div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="contactTitle" aria-hidden="true">',1)
+          s=s.replace('<h2>How do you want to connect?</h2>','<h2 id="contactTitle">How do you want to connect?</h2>',1)
+
+          # Make screenshot viewers keyboard accessible.
+          s=s.replace('<div class="workflow-shot n8n-shot" data-full=', '<div class="workflow-shot n8n-shot" role="button" tabindex="0" aria-label="Open full n8n workflow image" data-full=',1)
+          s=s.replace('<div class="workflow-shot" data-full="sam-bernstein-zapier-workflow.png">','<div class="workflow-shot" role="button" tabindex="0" aria-label="Open full Zapier workflow image" data-full="sam-bernstein-zapier-workflow.png">',1)
+          s=s.replace('<div class="workflow-shot support-shot" data-full=', '<div class="workflow-shot support-shot" role="button" tabindex="0" aria-label="Open full workflow image" data-full=')
+
+          # Lazy-load all below-fold workflow images.
+          for src in ['n8n-linkedin-ai-workflow.png','sam-bernstein-zapier-workflow.png','Vocie-Ai-zap.png','emailparser.png','hubspot-webflow.png']:
+              s=s.replace(f'<img src="{src}"', f'<img loading="lazy" decoding="async" src="{src}"')
+
+          # Labels tied to form controls for screen readers and larger click targets.
+          labels={
+            '<label>Your name *</label>':'<label for="name">Your name *</label>',
+            '<label>Work email *</label>':'<label for="email">Work email *</label>',
+            '<label>Company</label>':'<label for="company">Company</label>',
+            '<label>Project type</label>':'<label for="type">Project type</label>',
+            '<label>Apps / systems *</label>':'<label for="apps">Apps / systems *</label>',
+            '<label>What happens manually today? *</label>':'<label for="goal">What happens manually today? *</label>'
+          }
+          for a,b in labels.items(): s=s.replace(a,b,1)
+
+          # Add autocomplete hints where useful.
+          s=s.replace('id="email" type="email" autocomplete="email"', 'id="email" type="email" inputmode="email" autocomplete="email"',1)
+
+          # Performance: defer low-priority logo requests until needed.
+          s=s.replace('<img src="https://api.iconify.design/logos:${a[2]}.svg" alt="${a[0]}">', '<img loading="lazy" decoding="async" fetchpriority="low" src="https://api.iconify.design/logos:${a[2]}.svg" alt="${a[0]}">',1)
+          s=s.replace('<img src="https://api.iconify.design/logos:', '<img loading="lazy" decoding="async" src="https://api.iconify.design/logos:')
+
+          # Keep modal aria state in sync and restore focus to opener.
+          old="""const closeLightbox=()=>{lb.classList.remove('open');document.body.classList.remove('lock')}"""
+          new="""let lastFocus=null;const closeLightbox=()=>{lb.classList.remove('open');lb.setAttribute('aria-hidden','true');document.body.classList.remove('lock');if(lastFocus)lastFocus.focus()}"""
+          s=s.replace(old,new,1)
+          old="""document.querySelectorAll('.workflow-shot').forEach(x=>x.addEventListener('click',()=>{lbImg.src=x.dataset.full;lb.classList.add('open');document.body.classList.add('lock')}));"""
+          new="""const openWorkflowImage=x=>{lastFocus=x;lbImg.src=x.dataset.full;lb.classList.add('open');lb.setAttribute('aria-hidden','false');document.body.classList.add('lock');lbCloseBtn.focus()};document.querySelectorAll('.workflow-shot').forEach(x=>{x.addEventListener('click',()=>openWorkflowImage(x));x.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openWorkflowImage(x)}})});"""
+          s=s.replace(old,new,1)
+          old="""const closeContact=()=>{contactModal.classList.remove('open');document.body.classList.remove('lock');briefEl.classList.remove('open');choicesEl.style.display='block'};document.querySelectorAll('.js-contact').forEach(x=>x.addEventListener('click',()=>{contactModal.classList.add('open');document.body.classList.add('lock')}));"""
+          new="""const closeContact=()=>{contactModal.classList.remove('open');contactModal.setAttribute('aria-hidden','true');document.body.classList.remove('lock');briefEl.classList.remove('open');choicesEl.style.display='block';if(lastFocus)lastFocus.focus()};document.querySelectorAll('.js-contact').forEach(x=>x.addEventListener('click',()=>{lastFocus=x;contactModal.classList.add('open');contactModal.setAttribute('aria-hidden','false');document.body.classList.add('lock');contactCloseBtn.focus()}));"""
+          s=s.replace(old,new,1)
+
+          # Pause costly looping animations in background tabs and when off-screen.
+          perf_js="""const heroArt=document.querySelector('.hero-art'),n8nPreview=document.querySelector('.n8n-shot');const setAnimState=(el,on)=>{if(!el)return;el.querySelectorAll('*').forEach(x=>x.style.animationPlayState=on?'running':'paused')};if('IntersectionObserver'in window){const animObserver=new IntersectionObserver(entries=>entries.forEach(e=>setAnimState(e.target,e.isIntersecting&&!document.hidden)),{rootMargin:'120px'});[heroArt,n8nPreview].filter(Boolean).forEach(el=>animObserver.observe(el))}document.addEventListener('visibilitychange',()=>{if(document.hidden){setAnimState(heroArt,false);setAnimState(n8nPreview,false)}else{setAnimState(heroArt,true);setAnimState(n8nPreview,true)}});"""
+          if perf_js not in s:
+              s=s.replace('</script></body>',perf_js+'</script></body>',1)
+
+          p.write_text(s)
+          PY
+      - name: Commit performance and accessibility improvements
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Improve performance and accessibility"
+          git push
