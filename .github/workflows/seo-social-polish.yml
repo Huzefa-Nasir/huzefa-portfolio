@@ -1,0 +1,43 @@
+name: SEO and social preview polish
+
+on:
+  push:
+    paths:
+      - '.github/workflows/seo-social-polish.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.event.head_commit.message == 'Run SEO and social preview polish'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Improve metadata, social preview and structured data
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          old='<title>Huzefa Nasir — Automation & Integration Specialist</title><meta name="description" content="Advanced Zapier, n8n, API and CRM automation by Huzefa Nasir.">'
+          new='''<title>Huzefa Nasir — Automation Engineer | Zapier, n8n, APIs & CRMs</title><meta name="description" content="Automation engineer building advanced Zapier and n8n workflows, AI automations, CRM integrations, webhooks and custom API systems."><meta name="robots" content="index,follow,max-image-preview:large"><meta name="theme-color" content="#0b0b0c"><link rel="canonical" href="https://huzefa-nasir.github.io/huzefa-portfolio/"><meta property="og:type" content="website"><meta property="og:site_name" content="Huzefa Nasir"><meta property="og:title" content="Huzefa Nasir — Automation Engineer"><meta property="og:description" content="Advanced Zapier, n8n, AI, CRM and custom API automations — with real workflow architecture you can inspect."><meta property="og:url" content="https://huzefa-nasir.github.io/huzefa-portfolio/"><meta property="og:image" content="https://huzefa-nasir.github.io/huzefa-portfolio/n8n-linkedin-ai-workflow.png"><meta property="og:image:alt" content="Advanced n8n automation workflow built by Huzefa Nasir"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Huzefa Nasir — Automation Engineer"><meta name="twitter:description" content="Advanced Zapier, n8n, AI, CRM and custom API automations with real workflow proof."><meta name="twitter:image" content="https://huzefa-nasir.github.io/huzefa-portfolio/n8n-linkedin-ai-workflow.png"><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0b0c'/%3E%3Cpath d='M15 16h8v13h18V16h8v32h-8V36H23v12h-8z' fill='%23f7f5f2'/%3E%3Ccircle cx='52' cy='46' r='4' fill='%23ff4f00'/%3E%3C/svg%3E">'''
+          if old not in s:
+              raise SystemExit('head marker not found')
+          s=s.replace(old,new,1)
+          schema='''<script type="application/ld+json">{"@context":"https://schema.org","@type":"Person","name":"Huzefa Nasir","url":"https://huzefa-nasir.github.io/huzefa-portfolio/","jobTitle":"Automation Engineer","sameAs":["https://www.linkedin.com/in/huzefa-nasir/","https://www.upwork.com/freelancers/~01ec8a97eba35d40f4"],"knowsAbout":["Zapier","n8n","Workflow automation","API integrations","CRM integrations","Webhooks","AI automation"]}</script>'''
+          if schema not in s:
+              s=s.replace('</head>',schema+'</head>',1)
+          # Security + accessibility polish for external links
+          s=s.replace('target="_blank" href=', 'target="_blank" rel="noopener noreferrer" href=')
+          p.write_text(s)
+          PY
+      - name: Commit SEO polish
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Improve SEO metadata and social sharing previews"
+          git push
