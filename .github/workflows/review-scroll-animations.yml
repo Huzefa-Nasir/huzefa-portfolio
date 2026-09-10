@@ -37,3 +37,5 @@ jobs:
           git add index.html
           git commit -m "Refine scroll animation timing and mobile motion"
           git push
+
+# trigger 2
