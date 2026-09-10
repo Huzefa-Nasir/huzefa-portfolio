@@ -30,7 +30,6 @@ jobs:
           schema='''<script type="application/ld+json">{"@context":"https://schema.org","@type":"Person","name":"Huzefa Nasir","url":"https://huzefa-nasir.github.io/huzefa-portfolio/","jobTitle":"Automation Engineer","sameAs":["https://www.linkedin.com/in/huzefa-nasir/","https://www.upwork.com/freelancers/~01ec8a97eba35d40f4"],"knowsAbout":["Zapier","n8n","Workflow automation","API integrations","CRM integrations","Webhooks","AI automation"]}</script>'''
           if schema not in s:
               s=s.replace('</head>',schema+'</head>',1)
-          # Security + accessibility polish for external links
           s=s.replace('target="_blank" href=', 'target="_blank" rel="noopener noreferrer" href=')
           p.write_text(s)
           PY
