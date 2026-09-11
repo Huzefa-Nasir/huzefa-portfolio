@@ -1,0 +1,80 @@
+name: Improve n8n mobile explorer
+
+on:
+  push:
+    paths:
+      - '.github/workflows/improve-n8n-mobile-explorer.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  improve:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Add pinch zoom and mobile node details
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('n8n-workflow-explorer.html')
+          s=p.read_text()
+          if '/* Mobile explorer interaction */' not in s:
+              css=r'''/* Mobile explorer interaction */
+              .viewer{touch-action:none}
+              .mobile-detail{display:none}
+              @media(max-width:850px){.mobile-detail{position:absolute;left:10px;right:10px;bottom:48px;z-index:7;display:none;padding:13px 14px;border:1px solid #ff4f003f;border-radius:14px;background:#111114f2;backdrop-filter:blur(12px);box-shadow:0 18px 50px #000a}.mobile-detail.show{display:block}.mobile-detail .eyebrow{font-size:8px;text-transform:uppercase;color:#777;letter-spacing:.1em}.mobile-detail b{display:block;margin-top:3px;padding-right:24px;font:700 13px 'Space Grotesk'}.mobile-detail p{margin:4px 0 0;color:#9d9693;font-size:10px;line-height:1.35}.mobile-detail button{position:absolute;right:9px;top:8px;border:0;background:transparent;color:#999;font-size:18px;cursor:pointer}}
+              '''
+              s=s.replace('</style>',css+'</style>',1)
+          old='''<div class="world" id="world"><svg id="edges"></svg><div id="nodes"></div></div>
+  </div>
+  <aside class="side">'''
+          new='''<div class="world" id="world"><svg id="edges"></svg><div id="nodes"></div></div>
+    <div class="mobile-detail" id="mobileDetail"><button type="button" aria-label="Close node details">×</button><div class="eyebrow">Selected node</div><b id="mobileDetailTitle"></b><p id="mobileDetailText"></p></div>
+  </div>
+  <aside class="side">'''
+          if 'id="mobileDetail"' not in s:
+              if old not in s: raise SystemExit('viewer insertion point not found')
+              s=s.replace(old,new,1)
+          old_click="el.onclick=e=>{e.stopPropagation();selectNode(n,el)};"
+          new_click="el.onclick=e=>{e.stopPropagation();selectNode(n,el);if(innerWidth<=850){const md=document.getElementById('mobileDetail');document.getElementById('mobileDetailTitle').textContent=n.name;document.getElementById('mobileDetailText').textContent=descriptions[n.name]||'A functional step in the automation. Private implementation details are intentionally hidden in this portfolio view.';md.classList.add('show')}};"
+          if old_click in s:
+              s=s.replace(old_click,new_click,1)
+          elif new_click not in s:
+              raise SystemExit('node click handler not found')
+          mouse_end="window.addEventListener('mouseup',()=>{drag=false;viewer.classList.remove('dragging')});"
+          touch_code=r'''window.addEventListener('mouseup',()=>{drag=false;viewer.classList.remove('dragging')});
+const touchPts=new Map();let touchStartDist=0,touchStartScale=scale,touchWorld=null,touchLast=null;
+viewer.addEventListener('pointerdown',e=>{if(e.pointerType!=='touch'||e.target.closest('.node,.stage,.controls,.mobile-detail'))return;touchPts.set(e.pointerId,{x:e.clientX,y:e.clientY});viewer.setPointerCapture(e.pointerId);if(touchPts.size===1){touchLast={x:e.clientX,y:e.clientY}}else if(touchPts.size===2){const pts=[...touchPts.values()],r=viewer.getBoundingClientRect(),cx=(pts[0].x+pts[1].x)/2-r.left,cy=(pts[0].y+pts[1].y)/2-r.top;touchStartDist=Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y);touchStartScale=scale;touchWorld={x:(cx-panX)/scale,y:(cy-panY)/scale};touchLast=null}}, {passive:false});
+viewer.addEventListener('pointermove',e=>{if(e.pointerType!=='touch'||!touchPts.has(e.pointerId))return;e.preventDefault();touchPts.set(e.pointerId,{x:e.clientX,y:e.clientY});if(touchPts.size===2){const pts=[...touchPts.values()],r=viewer.getBoundingClientRect(),cx=(pts[0].x+pts[1].x)/2-r.left,cy=(pts[0].y+pts[1].y)/2-r.top,d=Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y),ns=Math.max(.16,Math.min(1.35,touchStartScale*(d/Math.max(1,touchStartDist))));panX=cx-touchWorld.x*ns;panY=cy-touchWorld.y*ns;scale=ns;apply()}else if(touchPts.size===1&&touchLast){panX+=e.clientX-touchLast.x;panY+=e.clientY-touchLast.y;touchLast={x:e.clientX,y:e.clientY};apply()}},{passive:false});
+function endTouch(e){if(e.pointerType!=='touch')return;touchPts.delete(e.pointerId);try{viewer.releasePointerCapture(e.pointerId)}catch{}if(touchPts.size===1){const pt=[...touchPts.values()][0];touchLast={x:pt.x,y:pt.y}}else{touchLast=null;touchStartDist=0}}
+viewer.addEventListener('pointerup',endTouch);viewer.addEventListener('pointercancel',endTouch);
+document.getElementById('mobileDetail')?.querySelector('button')?.addEventListener('click',()=>document.getElementById('mobileDetail').classList.remove('show'));'''
+          if 'const touchPts=new Map()' not in s:
+              if mouse_end not in s: raise SystemExit('mouse handler insertion point not found')
+              s=s.replace(mouse_end,touch_code,1)
+          p.write_text(s)
+          PY
+      - name: Validate n8n explorer
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('n8n-workflow-explorer.html').read_text()
+          required=['id="mobileDetail"','const touchPts=new Map()','touch-action:none','mobileDetailTitle','pointermove']
+          missing=[x for x in required if x not in s]
+          if missing: raise SystemExit('Missing: '+', '.join(missing))
+          scripts=re.findall(r'<script>(.*?)</script>',s,re.S)
+          Path('/tmp/n8n-inline.js').write_text('\n'.join(scripts))
+          print('mobile explorer checks: OK')
+          PY
+          node --check /tmp/n8n-inline.js
+      - name: Commit mobile explorer improvements
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add n8n-workflow-explorer.html
+          git commit -m 'Improve n8n explorer mobile interactions'
+          git push
