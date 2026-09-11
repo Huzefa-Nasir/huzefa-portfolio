@@ -1,0 +1,154 @@
+name: Portfolio privacy and dark theme polish
+
+on:
+  push:
+    branches: [portfolio-polish-privacy]
+    paths:
+      - '.github/workflows/portfolio-polish-privacy.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  polish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: portfolio-polish-privacy
+          fetch-depth: 0
+
+      - name: Polish privacy, contrast, logos and workflow previews
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          # ---------------- index.html ----------------
+          p = Path('index.html')
+          s = p.read_text()
+
+          s = s.replace('For The Sam Bernstein Law Offices,', 'For a confidential law firm,')
+          s = s.replace('For the Sam Bernstein Law Offices,', 'For a confidential law firm,')
+          s = s.replace('Sam Bernstein', 'confidential client')
+
+          # Improve the lowest-contrast global muted tone without flattening hierarchy.
+          s = s.replace('--muted:#aaa3a0', '--muted:#b8b1ad')
+
+          polish_css = r'''/* Final dark-theme contrast, brand visibility and preview-density pass */
+          .option-copy b,.case h3,.support-card h3,.brief-head h2{color:#f7f5f2}
+          .option-copy span,.field .hint,.privacy-note,.explorer-note,.cert-proof span,.proof small,footer{color:#aaa29e}
+          .route-icon{background:#f7f3ee!important;border:1px solid #ffffff!important;box-shadow:0 8px 22px #0005,inset 0 0 0 1px #0000000a}
+          .route-icon img{width:27px;height:27px;filter:none!important}
+          .route-icon .route-fallback{color:#101012!important}
+          .logo-card{background:#151316}
+          .logo-card img{width:56px;height:56px;padding:9px;border-radius:13px;background:#f7f3ee;border:1px solid #ffffff;box-shadow:0 8px 18px #0005;filter:none!important}
+          .logo-card .fallback{width:56px;height:56px;border-radius:13px;background:#f7f3ee;color:#111;font:700 12px 'Space Grotesk';border:1px solid #fff}
+          .logo-card span{color:#eee9e5;font-weight:600}
+          .arch-preview .stage-label{fill:#a9a19d}
+          .arch-preview .node-text{fill:#f6f2ee;font-size:8.5px;font-weight:700;letter-spacing:.15px}
+          .arch-preview .node-sub{fill:#a79f9b;font-size:6.8px;font-weight:500}
+          .arch-preview .branch-num{fill:#f7f5f2;font-size:7px;font-weight:700;text-anchor:middle}
+          @media(max-width:550px){.logo-card img,.logo-card .fallback{width:48px;height:48px;padding:8px}.arch-preview .node-text{font-size:7.6px}.arch-preview .node-sub{font-size:6px}}
+          '''
+          if '/* Final dark-theme contrast, brand visibility and preview-density pass */' not in s:
+              s = s.replace('</style>', polish_css + '</style>', 1)
+
+          # Populate the n8n preview boxes with compact labels so the architecture does not feel hollow.
+          n8n_anchor = '<circle class="beacon" cx="78" cy="108" r="5"/>'
+          if 'class="node-text" x="78" y="111"' not in s:
+              labels = '''<text class="node-text" x="78" y="111" text-anchor="middle">ICP</text><text class="node-text" x="192" y="81" text-anchor="middle">Search</text><text class="node-text" x="299" y="111" text-anchor="middle">Enrich</text><text class="node-text" x="408" y="79" text-anchor="middle">Research</text><text class="node-text" x="527" y="111" text-anchor="middle">AI score</text><text class="node-text" x="643" y="81" text-anchor="middle">Rank</text><text class="node-text" x="755" y="111" text-anchor="middle">Connect</text><text class="node-text" x="842" y="111" text-anchor="middle">Message</text><text class="node-sub" x="408" y="169" text-anchor="middle">Website</text><text class="node-sub" x="527" y="169" text-anchor="middle">Posts / news</text><text class="node-sub" x="643" y="169" text-anchor="middle">Routing</text>'''
+              if n8n_anchor not in s: raise SystemExit('n8n preview anchor missing')
+              s = s.replace(n8n_anchor, labels + n8n_anchor, 1)
+
+          # Populate the Zapier routing preview with meaningful stage/branch labels.
+          zap_anchor = '<circle class="beacon" cx="308" cy="176" r="5"/>'
+          if 'class="node-text" x="62" y="179"' not in s:
+              labels = '''<text class="node-text" x="62" y="179" text-anchor="middle">Lead</text><text class="node-text" x="176" y="179" text-anchor="middle">Qualify</text><text class="node-text" x="308" y="179" text-anchor="middle">Paths</text><text class="node-sub" x="261" y="93" text-anchor="middle">Existing</text><text class="node-sub" x="261" y="276" text-anchor="middle">Non-case</text><text class="branch-num" x="454" y="73">R1</text><text class="branch-num" x="454" y="113">R2</text><text class="branch-num" x="454" y="153">R3</text><text class="branch-num" x="454" y="203">R4</text><text class="branch-num" x="454" y="243">R5</text><text class="branch-num" x="454" y="283">R6</text><text class="branch-num" x="598" y="73">Team</text><text class="branch-num" x="598" y="113">Team</text><text class="branch-num" x="598" y="153">Team</text><text class="branch-num" x="598" y="203">Team</text><text class="branch-num" x="598" y="243">Team</text><text class="branch-num" x="598" y="283">Team</text>'''
+              if zap_anchor not in s: raise SystemExit('Zapier preview anchor missing')
+              s = s.replace(zap_anchor, labels + zap_anchor, 1)
+
+          p.write_text(s)
+
+          # ---------------- Zapier explorer ----------------
+          p = Path('zapier-legal-workflow-explorer.html')
+          z = p.read_text()
+          z = z.replace('Sam Bernstein lead-routing Zap', 'production legal lead-routing Zap')
+          z = z.replace('Sam Bernstein', 'confidential client')
+          z = z.replace('--muted:#aaa3a0', '--muted:#b8b1ad')
+          z = z.replace('button{font:inherit}', 'button{font:inherit;color:inherit}')
+          z = z.replace('.node{position:absolute;', '.node{color:var(--text);position:absolute;', 1)
+          z = z.replace('.node small{display:block;margin-top:5px;font-size:9px;color:#8d878a;', '.node small{display:block;margin-top:5px;font-size:9px;color:#b0a8a4;', 1)
+          z = z.replace('.side p{color:var(--muted);', '.side p{color:#c0b9b5;', 1)
+          z = z.replace('.guide p{margin:5px 0 0;font-size:11px;color:#8e8885}', '.guide p{margin:5px 0 0;font-size:11px;color:#aaa29e}', 1)
+          z = z.replace('.story p{font-size:11px;margin:5px 0 0;color:#898381}', '.story p{font-size:11px;margin:5px 0 0;color:#aaa29e}', 1)
+          z = z.replace('.legend span{font-size:10px;color:#918b88}', '.legend span{font-size:10px;color:#aaa29e}', 1)
+          z = z.replace('.privacy{margin-top:18px;padding:12px;border-radius:11px;border:1px solid #ffffff10;background:#0d0d0f;color:#777;', '.privacy{margin-top:18px;padding:12px;border-radius:11px;border:1px solid #ffffff10;background:#0d0d0f;color:#9f9894;', 1)
+          p.write_text(z)
+
+          # ---------------- n8n explorer ----------------
+          p = Path('n8n-workflow-explorer.html')
+          n = p.read_text()
+          n = n.replace('--muted:#aaa3a0', '--muted:#b8b1ad')
+          n = n.replace('button{font:inherit}', 'button{font:inherit;color:inherit}')
+          n = n.replace('.node small{display:block;margin-top:5px;font-size:9px;color:#8d878a;', '.node small{display:block;margin-top:5px;font-size:9px;color:#b0a8a4;', 1)
+          n = n.replace('.side p{color:var(--muted);', '.side p{color:#c0b9b5;', 1)
+          n = n.replace('.guide p{margin:5px 0 0;font-size:11px;color:#8e8885}', '.guide p{margin:5px 0 0;font-size:11px;color:#aaa29e}', 1)
+          n = n.replace('.legend span{font-size:10px;color:#918b88}', '.legend span{font-size:10px;color:#aaa29e}', 1)
+          p.write_text(n)
+          PY
+
+      - name: Add light browser-side abuse friction to public form
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          # This is deliberately labeled as browser-side friction, not a replacement for rotating the webhook.
+          old="formEl.addEventListener('submit',async e=>{e.preventDefault();if(websiteInput.value)return;let payload="
+          new="formEl.addEventListener('submit',async e=>{e.preventDefault();if(websiteInput.value)return;const lastSubmit=Number(localStorage.getItem('portfolio_last_submit')||0);if(Date.now()-lastSubmit<45000){sendBtn.disabled=false;sendBtn.textContent='Please wait a moment';setTimeout(()=>sendBtn.textContent='Send my process ↗',2200);return}let payload="
+          if 'portfolio_last_submit' not in s:
+              if old not in s: raise SystemExit('form submit handler anchor missing')
+              s=s.replace(old,new,1)
+          old2="launchAutomationExperience(emailInput.value)}catch(err){"
+          new2="localStorage.setItem('portfolio_last_submit',String(Date.now()));launchAutomationExperience(emailInput.value)}catch(err){"
+          if "localStorage.setItem('portfolio_last_submit'" not in s:
+              if old2 not in s: raise SystemExit('success handler anchor missing')
+              s=s.replace(old2,new2,1)
+          p.write_text(s)
+          PY
+
+      - name: Validate text, contrast and scripts
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          tracked=['index.html','zapier-legal-workflow-explorer.html','n8n-workflow-explorer.html']
+          combined='\n'.join(Path(x).read_text() for x in tracked)
+          checks={
+            'restricted client name removed':'Sam Bernstein' not in combined and 'sam bernstein' not in combined.lower(),
+            'route icons use bright tiles':'.route-icon{background:#f7f3ee!important' in combined,
+            'integration logos use bright tiles':'.logo-card img{width:56px' in combined,
+            'workflow previews include labels':'class="node-text" x="78" y="111"' in combined and 'class="node-text" x="62" y="179"' in combined,
+            'Zapier node text forced light':'.node{color:var(--text);position:absolute' in Path('zapier-legal-workflow-explorer.html').read_text(),
+            'browser cooldown exists':'portfolio_last_submit' in Path('index.html').read_text(),
+          }
+          bad=[k for k,v in checks.items() if not v]
+          print('\n'.join(f"{k}: {'OK' if v else 'FAIL'}" for k,v in checks.items()))
+          if bad: raise SystemExit('Validation failed: '+', '.join(bad))
+          for f in tracked:
+              text=Path(f).read_text()
+              scripts=re.findall(r'<script>(.*?)</script>',text,re.S)
+              if scripts: Path('/tmp/'+f.replace('/','_')+'.js').write_text('\n'.join(scripts))
+          PY
+          node --check /tmp/index.html.js
+          node --check /tmp/zapier-legal-workflow-explorer.html.js
+          node --check /tmp/n8n-workflow-explorer.html.js
+
+      - name: Commit polished portfolio branch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html zapier-legal-workflow-explorer.html n8n-workflow-explorer.html
+          git commit -m 'Polish dark theme privacy and workflow previews'
+          git push origin portfolio-polish-privacy
