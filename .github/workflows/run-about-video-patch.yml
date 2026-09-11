@@ -14,16 +14,14 @@ jobs:
           fetch-depth: 0
       - name: Download video asset
         run: curl -L --fail 'https://d2ol7oe51mr4n9.cloudfront.net/user_3J73EOxm5WkMkPVtupQKASbbY7h/2e127a0b-2214-424d-b026-0c940b3c6301.mp4' -o about-automation-story.mp4
-      - name: Make poster
-        run: ffmpeg -y -ss 10.8 -i about-automation-story.mp4 -frames:v 1 -q:v 2 about-automation-story-poster.jpg >/dev/null 2>&1
       - name: Patch page
         run: python patch_about_video.py
       - name: Validate
         run: |
           test -s about-automation-story.mp4
-          test -s about-automation-story-poster.jpg
           grep -q 'id="aboutFilm"' index.html
           grep -q 'Premium About motion film' index.html
+          grep -q 'about-film-fallback' index.html
           python - <<'PY'
           from pathlib import Path
           import re
@@ -35,6 +33,6 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add index.html about-automation-story.mp4 about-automation-story-poster.jpg
+          git add index.html about-automation-story.mp4
           git commit -m 'Replace About stats with premium automation story video'
           git push
