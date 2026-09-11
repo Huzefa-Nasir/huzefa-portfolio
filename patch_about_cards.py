@@ -27,3 +27,4 @@ if 'aboutFilm' in s or 'about-automation-story.mp4' in s:
     raise SystemExit('old film refs remain')
 p.write_text(s)
 print('About cards patch complete')
+# trigger
