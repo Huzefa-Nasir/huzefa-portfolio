@@ -1,0 +1,24 @@
+name: Run mobile hero typography refinement
+on:
+  push:
+    paths:
+      - '.github/workflows/run-mobile-hero-type.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: python patch_mobile_hero_type.py
+      - name: Validate
+        run: grep -q 'Mobile hero readability refinement' index.html
+      - name: Commit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'Improve mobile hero headline spacing'
+          git push
