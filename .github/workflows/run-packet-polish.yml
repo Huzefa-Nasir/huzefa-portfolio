@@ -1,0 +1,27 @@
+name: Run packet animation polish
+on:
+  push:
+    paths:
+      - '.github/workflows/run-packet-polish.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: python patch_packet_beacons.py
+      - name: Validate packet polish
+        run: |
+          grep -q 'moving data should be the only active indicator' index.html
+          grep -q 'route-packet zap-packet' index.html
+          grep -q 'route-packet n8n-packet' index.html
+      - name: Commit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'Polish moving workflow packet indicators'
+          git push
