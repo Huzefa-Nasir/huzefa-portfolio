@@ -1,0 +1,71 @@
+name: Harden live automation success experience
+
+on:
+  push:
+    paths:
+      - '.github/workflows/harden-live-automation-success.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  harden:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Harden animation lifecycle and progress line
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          p=Path('index.html')
+          s=p.read_text()
+
+          # Avoid relying on CSS percentage multiplication, which is not consistently supported.
+          s=s.replace("width:calc(var(--auto-progress)*.86);background:linear-gradient", "width:var(--auto-progress);max-width:86%;background:linear-gradient", 1)
+
+          # Replace the animation functions with a timeout-safe version so closing/reopening the modal cannot leave stale states behind.
+          pattern=r"function resetAutomationExperience\(\)\{.*?\}function launchAutomationExperience\(email\)\{.*?\}(?=formEl\.addEventListener\('submit')"
+          replacement=r'''let autoTimers=[];function resetAutomationExperience(){autoTimers.forEach(clearTimeout);autoTimers=[];const route=document.getElementById('autoRoute'),spam=document.getElementById('autoSpam'),head=document.querySelector('.brief-head');if(!formEl||!sentEl)return;formEl.classList.remove('automation-mode');sentEl.classList.remove('show');if(head)head.style.display='';if(backBtn)backBtn.style.display='';if(route){route.style.setProperty('--auto-progress','0%');route.querySelectorAll('.auto-stage').forEach((el,i)=>{el.classList.remove('running','done');const state=el.querySelector('.auto-stage-state');if(state)state.textContent=i===0?'Waiting':'Queued'})}if(spam)spam.classList.remove('hot');const log=document.getElementById('autoLog');if(log)log.innerHTML='<strong>Ready.</strong> Waiting for the automation handoff…';if(sendBtn){sendBtn.disabled=false;sendBtn.textContent='Send my process ↗'}}function launchAutomationExperience(email){resetAutomationExperience();const route=document.getElementById('autoRoute'),stages=route?[...route.querySelectorAll('.auto-stage')]:[],log=document.getElementById('autoLog'),spam=document.getElementById('autoSpam'),target=document.getElementById('autoEmailTarget'),done=document.getElementById('autoDone'),head=document.querySelector('.brief-head'),reduceMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;formEl.classList.add('automation-mode');if(head)head.style.display='none';if(backBtn)backBtn.style.display='none';if(target)target.textContent=email||'your email';sentEl.classList.add('show');sentEl.focus({preventScroll:true});sentEl.scrollIntoView({behavior:reduceMotion?'auto':'smooth',block:'start'});const messages=[['Webhook captured','POST → project brief accepted by the webhook.'],['AI processing','AI → reading your process, apps and project intent.'],['Drafting reply','AI → preparing a personalized email response.'],['Email handoff','Email → automated reply workflow dispatched.']],progress=['0%','29%','58%','86%'],delays=reduceMotion?[0,150,300,450]:[120,1150,3000,5000],finishDelay=reduceMotion?650:6800,schedule=(fn,ms)=>autoTimers.push(setTimeout(fn,ms));stages.forEach((stage,i)=>{schedule(()=>{stages.forEach((x,j)=>{if(j<i){x.classList.remove('running');x.classList.add('done');const st=x.querySelector('.auto-stage-state');if(st)st.textContent='Complete'}});stage.classList.add('running');const state=stage.querySelector('.auto-stage-state');if(state)state.textContent=i===3?'Sending':'Running';if(route)route.style.setProperty('--auto-progress',progress[i]);if(log)log.innerHTML=`<strong>${messages[i][0]}.</strong> ${messages[i][1]}`},delays[i])});schedule(()=>{stages.forEach(x=>{x.classList.remove('running');x.classList.add('done');const st=x.querySelector('.auto-stage-state');if(st)st.textContent='Complete'});if(route)route.style.setProperty('--auto-progress','86%');if(log)log.innerHTML='<strong>Workflow is in motion.</strong> Your automated reply should arrive shortly.';if(spam)spam.classList.add('hot')},finishDelay);if(done&&!done.dataset.bound){done.dataset.bound='1';done.addEventListener('click',closeContact)}}'''
+          s2,count=re.subn(pattern,replacement,s,count=1,flags=re.S)
+          if count!=1:
+              raise SystemExit(f'Expected to replace one animation function block, replaced {count}')
+          p.write_text(s2)
+          PY
+
+      - name: Validate HTML markers and JavaScript syntax
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re, subprocess, sys
+          s=Path('index.html').read_text()
+          required=[
+            'let autoTimers=[]',
+            "progress=['0%','29%','58%','86%']",
+            "route.style.setProperty('--auto-progress','86%')",
+            'check Spam / Junk too',
+            'max-width:86%',
+            'resetAutomationExperience();choicesEl.style.display'
+          ]
+          missing=[x for x in required if x not in s]
+          if missing:
+              print('Missing:',missing);sys.exit(1)
+          scripts=re.findall(r'<script(?: [^>]*)?>(.*?)</script>',s,re.S)
+          executable=[x for x in scripts if 'const APPS=' in x]
+          if len(executable)!=1:
+              print('Expected one main JS script, got',len(executable));sys.exit(1)
+          Path('/tmp/site.js').write_text(executable[0])
+          subprocess.run(['node','--check','/tmp/site.js'],check=True)
+          print('JavaScript syntax and live-animation markers passed.')
+          PY
+
+      - name: Commit hardening
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Harden animated automation success flow"
+          git push
