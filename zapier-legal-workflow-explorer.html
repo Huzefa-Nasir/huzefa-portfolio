@@ -37,7 +37,7 @@
   </div>
   <aside class="side">
     <div class="k">Advanced Zapier paths · legal</div><h2>Lead-routing engine</h2>
-    <p>This public explorer shows the architecture of the Sam Bernstein lead-routing Zap without exposing private case labels, recipient details or client data.</p>
+    <p>This public explorer is a grouped representation of the Sam Bernstein lead-routing Zap, showing the decision architecture without exposing private case labels, recipient details or client data.</p>
     <div class="stat"><div><b>Multi-path</b><span>conditional routing</span></div><div><b>Layered</b><span>qualification logic</span></div></div>
     <div class="guide"><b>Why the Zap became large</b><p>One lead can take very different routes depending on client status, sales/solicitation checks, case classification and downstream destination rules.</p></div>
     <div class="detail"><div class="eyebrow">Selected node</div><h3 id="detailTitle">Case path router</h3><code id="detailType">Paths by Zapier</code><p id="detailText">Fans qualified inquiries into separate case-routing branches. Public labels are anonymized, while the routing structure is preserved.</p></div>
@@ -50,22 +50,22 @@
 const data={
  nodes:[
   {id:'lead',x:80,y:610,cat:'trigger',stage:'intake',name:'Incoming lead',sub:'New inquiry enters the Zap',icon:'ZAP',type:'Zapier trigger',desc:'Starts the routing workflow when a new lead is received.'},
-  {id:'normalize',x:330,y:610,cat:'data',stage:'intake',name:'Normalize lead fields',sub:'Prepare values for rules',icon:'TXT',type:'Formatter / data prep',desc:'Standardizes the incoming lead data so later filters and paths evaluate consistent values.'},
-  {id:'required',x:580,y:610,cat:'filter',stage:'qualify',name:'Required data check',sub:'Can this lead be evaluated?',icon:'IF',type:'Filter',desc:'Checks that the lead contains enough information to continue through the routing logic.'},
+  {id:'normalize',x:330,y:610,cat:'data',stage:'intake',name:'Lead intake / field prep',sub:'Grouped preparation steps',icon:'TXT',type:'Public grouping',desc:'Groups the small preparation steps that get incoming lead data ready for the routing logic. Exact private implementation details are intentionally hidden.'},
+  {id:'required',x:580,y:610,cat:'filter',stage:'qualify',name:'Qualification layer',sub:'Grouped preliminary conditions',icon:'IF',type:'Grouped qualification',desc:'Represents the preliminary conditions used before a lead reaches the main case-routing paths. Multiple private checks are grouped in this public view.'},
   {id:'existing',x:830,y:410,cat:'filter',stage:'qualify',name:'Existing client?',sub:'Separate current-client traffic',icon:'IF',type:'Qualification rule',desc:'Identifies inquiries that should not continue through the standard new-lead case routing flow.'},
   {id:'sales',x:830,y:810,cat:'filter',stage:'qualify',name:'Sales / solicitation?',sub:'Separate non-case traffic',icon:'IF',type:'Qualification rule',desc:'Detects sales pitches or other non-case inquiries so they can take a different handling path.'},
   {id:'existing_route',x:1090,y:260,cat:'fallback',stage:'split',name:'Current-client handling',sub:'Special route',icon:'↗',type:'Special route',desc:'Routes existing-client inquiries away from the new-case intake branches.'},
   {id:'sales_route',x:1090,y:960,cat:'fallback',stage:'split',name:'Non-lead handling',sub:'Special route',icon:'↗',type:'Special route',desc:'Routes sales or solicitation traffic away from case intake destinations.'},
   {id:'qualified',x:1080,y:610,cat:'filter',stage:'qualify',name:'Qualified new inquiry',sub:'Continue to case logic',icon:'✓',type:'Qualification gate',desc:'Represents leads that pass the preliminary checks and are ready for case classification.'},
   {id:'router',x:1340,y:610,cat:'path',stage:'split',name:'Case path router',sub:'Paths fan out by case logic',icon:'PATH',type:'Paths by Zapier',desc:'Fans qualified inquiries into separate case-routing branches. Public labels are anonymized, while the routing structure is preserved.'},
-  {id:'p1',x:1640,y:120,cat:'path',stage:'rules',name:'Case route 01',sub:'Anonymized case category',icon:'P1',type:'Path branch',desc:'One of the case-specific branches in the original Zap. Public case labels are hidden.'},
-  {id:'p2',x:1640,y:260,cat:'path',stage:'rules',name:'Case route 02',sub:'Anonymized case category',icon:'P2',type:'Path branch',desc:'Case-specific route with its own branch conditions and destination mapping.'},
-  {id:'p3',x:1640,y:400,cat:'path',stage:'rules',name:'Case route 03',sub:'Anonymized case category',icon:'P3',type:'Path branch',desc:'Case-specific route with distinct qualification rules.'},
-  {id:'p4',x:1640,y:540,cat:'path',stage:'rules',name:'Case route 04',sub:'Anonymized case category',icon:'P4',type:'Path branch',desc:'Case-specific route used to keep one intake workflow while applying different handling logic.'},
-  {id:'p5',x:1640,y:680,cat:'path',stage:'rules',name:'Case route 05',sub:'Anonymized case category',icon:'P5',type:'Path branch',desc:'Case-specific route with its own matching rules.'},
-  {id:'p6',x:1640,y:820,cat:'path',stage:'rules',name:'Case route 06',sub:'Anonymized case category',icon:'P6',type:'Path branch',desc:'Case-specific route with a separate destination mapping.'},
-  {id:'p7',x:1640,y:960,cat:'path',stage:'rules',name:'Case route 07',sub:'Anonymized case category',icon:'P7',type:'Path branch',desc:'Case-specific route representing another conditional branch in the large Zap.'},
-  {id:'p8',x:1640,y:1100,cat:'path',stage:'rules',name:'Other / review route',sub:'Catch cases outside primary paths',icon:'P8',type:'Fallback path',desc:'Catches leads that do not match the primary public path groups and sends them through fallback handling.'},
+  {id:'p1',x:1640,y:120,cat:'path',stage:'rules',name:'Case branch group 01',sub:'Anonymized route group',icon:'P1',type:'Path branch',desc:'A public grouping of case-specific conditions from the original Zap. Private case labels are hidden.'},
+  {id:'p2',x:1640,y:260,cat:'path',stage:'rules',name:'Case branch group 02',sub:'Anonymized route group',icon:'P2',type:'Path branch',desc:'Case-specific route with its own branch conditions and destination mapping.'},
+  {id:'p3',x:1640,y:400,cat:'path',stage:'rules',name:'Case branch group 03',sub:'Anonymized route group',icon:'P3',type:'Path branch',desc:'Case-specific route with distinct qualification rules.'},
+  {id:'p4',x:1640,y:540,cat:'path',stage:'rules',name:'Case branch group 04',sub:'Anonymized route group',icon:'P4',type:'Path branch',desc:'Case-specific route used to keep one intake workflow while applying different handling logic.'},
+  {id:'p5',x:1640,y:680,cat:'path',stage:'rules',name:'Case branch group 05',sub:'Anonymized route group',icon:'P5',type:'Path branch',desc:'Case-specific route with its own matching rules.'},
+  {id:'p6',x:1640,y:820,cat:'path',stage:'rules',name:'Case branch group 06',sub:'Anonymized route group',icon:'P6',type:'Path branch',desc:'Case-specific route with a separate destination mapping.'},
+  {id:'p7',x:1640,y:960,cat:'path',stage:'rules',name:'Case branch group 07',sub:'Anonymized route group',icon:'P7',type:'Path branch',desc:'Case-specific route representing another conditional branch in the large Zap.'},
+  {id:'p8',x:1640,y:1100,cat:'path',stage:'rules',name:'Additional case route',sub:'Grouped secondary routing',icon:'P8',type:'Fallback path',desc:'Catches leads that do not match the primary public path groups and sends them through fallback handling.'},
   {id:'r1',x:1940,y:120,cat:'route',stage:'route',name:'Branch rule set 01',sub:'Validate route conditions',icon:'IF',type:'Branch filters',desc:'Applies the conditions required for this case route before selecting a destination.'},
   {id:'r2',x:1940,y:260,cat:'route',stage:'route',name:'Branch rule set 02',sub:'Validate route conditions',icon:'IF',type:'Branch filters',desc:'Evaluates branch-specific values before the lead is handed to a destination.'},
   {id:'r3',x:1940,y:400,cat:'route',stage:'route',name:'Branch rule set 03',sub:'Validate route conditions',icon:'IF',type:'Branch filters',desc:'Applies the routing conditions unique to this case branch.'},
@@ -73,7 +73,7 @@ const data={
   {id:'r5',x:1940,y:680,cat:'route',stage:'route',name:'Branch rule set 05',sub:'Validate route conditions',icon:'IF',type:'Branch filters',desc:'Validates this case route before assigning its destination.'},
   {id:'r6',x:1940,y:820,cat:'route',stage:'route',name:'Branch rule set 06',sub:'Validate route conditions',icon:'IF',type:'Branch filters',desc:'Evaluates the conditions for this branch and prepares the final routing decision.'},
   {id:'r7',x:1940,y:960,cat:'route',stage:'route',name:'Branch rule set 07',sub:'Validate route conditions',icon:'IF',type:'Branch filters',desc:'Runs the conditional logic associated with this case route.'},
-  {id:'r8',x:1940,y:1100,cat:'fallback',stage:'route',name:'Fallback review',sub:'Keep unmatched leads visible',icon:'?',type:'Fallback handling',desc:'Provides a safe route for leads that cannot be confidently assigned by the primary paths.'},
+  {id:'r8',x:1940,y:1100,cat:'fallback',stage:'route',name:'Additional branch rules',sub:'Grouped secondary conditions',icon:'?',type:'Fallback handling',desc:'Provides a safe route for leads that cannot be confidently assigned by the primary paths.'},
   {id:'d1',x:2240,y:120,cat:'delivery',stage:'delivery',name:'Destination group 01',sub:'Assigned attorney / team',icon:'→',type:'Destination mapping',desc:'Sends the matched lead to the destination configured for this branch.'},
   {id:'d2',x:2240,y:260,cat:'delivery',stage:'delivery',name:'Destination group 02',sub:'Assigned attorney / team',icon:'→',type:'Destination mapping',desc:'Delivers this case branch to its configured attorney, team or intake destination.'},
   {id:'d3',x:2240,y:400,cat:'delivery',stage:'delivery',name:'Destination group 03',sub:'Assigned attorney / team',icon:'→',type:'Destination mapping',desc:'Routes this matched inquiry to the configured downstream destination.'},
@@ -81,7 +81,7 @@ const data={
   {id:'d5',x:2240,y:680,cat:'delivery',stage:'delivery',name:'Destination group 05',sub:'Assigned attorney / team',icon:'→',type:'Destination mapping',desc:'Completes the branch by routing the lead to its mapped destination.'},
   {id:'d6',x:2240,y:820,cat:'delivery',stage:'delivery',name:'Destination group 06',sub:'Assigned attorney / team',icon:'→',type:'Destination mapping',desc:'Completes the routing path for this branch.'},
   {id:'d7',x:2240,y:960,cat:'delivery',stage:'delivery',name:'Destination group 07',sub:'Assigned attorney / team',icon:'→',type:'Destination mapping',desc:'Completes another branch of the multi-path lead routing system.'},
-  {id:'review',x:2240,y:1100,cat:'fallback',stage:'delivery',name:'Manual review queue',sub:'Safe fallback destination',icon:'!',type:'Fallback destination',desc:'Keeps unmatched or ambiguous inquiries from being lost by sending them to a review destination.'},
+  {id:'review',x:2240,y:1100,cat:'fallback',stage:'delivery',name:'Additional destination',sub:'Grouped downstream handling',icon:'!',type:'Fallback destination',desc:'Keeps unmatched or ambiguous inquiries from being lost by sending them to a review destination.'},
   {id:'current_dest',x:1370,y:260,cat:'delivery',stage:'delivery',name:'Existing-client destination',sub:'Dedicated handling',icon:'→',type:'Special destination',desc:'Final destination for inquiries identified as existing-client traffic.'},
   {id:'sales_dest',x:1370,y:960,cat:'delivery',stage:'delivery',name:'Non-case destination',sub:'Dedicated handling',icon:'→',type:'Special destination',desc:'Final destination for sales/solicitation or other non-case traffic.'}
  ],
