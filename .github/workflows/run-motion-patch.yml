@@ -1,0 +1,35 @@
+name: Run portfolio motion patch
+on:
+  push:
+    paths:
+      - '.github/workflows/run-motion-patch.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Patch portfolio
+        run: python patch_portfolio_motion.py
+      - name: Validate JavaScript
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('index.html').read_text()
+          required=['route-packet n8n-packet','route-packet zap-packet','p1Mobile','function hydrateLogos()','content-visibility:auto']
+          missing=[x for x in required if x not in s]
+          if missing: raise SystemExit('Missing: '+repr(missing))
+          Path('/tmp/index-inline.js').write_text('\n'.join(re.findall(r'<script>(.*?)</script>',s,re.S)))
+          PY
+          node --check /tmp/index-inline.js
+      - name: Commit patch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'Fix workflow motion and optimize mobile rendering'
+          git push
