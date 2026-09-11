@@ -20,6 +20,8 @@ jobs:
         run: |
           test -s about-automation-story.mp4
           grep -q 'id="aboutFilm"' index.html
+          grep -q 'muted loop playsinline autoplay' index.html
+          grep -q "markReveal('#about .about-film-shell','reveal-scale');" index.html
           grep -q 'Premium About motion film' index.html
           grep -q 'about-film-fallback' index.html
           python - <<'PY'
@@ -34,5 +36,5 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add index.html about-automation-story.mp4
-          git commit -m 'Replace About stats with premium automation story video'
+          git commit -m 'Harden About story video autoplay and reveal'
           git push
